@@ -1,0 +1,31 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_IMAGE: python-app:latest
+
+test:
+  stage: test
+  image: python:3.10
+  script:
+    - pip install -r app/requirements.txt
+    - python -m unittest discover app/tests/
+
+build:
+  stage: build
+  image: docker:20.10.7
+  services:
+    - docker:dind
+  script:
+    - docker build -t $DOCKER_IMAGE app/
+
+deploy:
+  stage: deploy
+  image: bitnami/kubectl
+  script:
+    - kubectl apply -f k8s/deployment.yaml
+    - kubectl apply -f k8s/service.yaml
+  only:
+    - main
