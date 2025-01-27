@@ -10,7 +10,7 @@ test:
   stage: test
   image: python:3.10
   script:
-    - pip install -r app/requirements.txt
+    - pip install --cache-dir=.pip_cache -r app/requirements.txt
     - python -m unittest discover app/tests/
 
 build:
@@ -20,11 +20,15 @@ build:
     - docker:dind
   script:
     - docker build -t $DOCKER_IMAGE app/
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker push $DOCKER_IMAGE
 
 deploy:
   stage: deploy
   image: bitnami/kubectl
   script:
+    - echo "$KUBECONFIG_CONTENT" > kubeconfig
+    - export KUBECONFIG=$(pwd)/kubeconfig
     - kubectl apply -f k8s/deployment.yaml
     - kubectl apply -f k8s/service.yaml
   only:
